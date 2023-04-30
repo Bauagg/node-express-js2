@@ -1,4 +1,5 @@
 const { Users } = require('../../models')
+const bcrypt = require('../../utils/bcrypt')
 const Sequelize = require('sequelize')
 const Op = Sequelize.Op
 
@@ -50,7 +51,7 @@ const getUsersById = async (req, res, next) => {
 const postUsers = async (req, res, next) => {
     try {
         const { username, password, email } = req.body
-
+        const hashedPassword = await bcrypt.hashPassword(password)
         // validatsi
         const exist = await Users.findOne({
             where: {
@@ -61,7 +62,7 @@ const postUsers = async (req, res, next) => {
         if (exist) throw ({ code: 400, message: 'email already registered' })
         const user = await Users.create({
             username,
-            password,
+            password: hashedPassword,
             email
         })
         res.status(201).json({
@@ -78,9 +79,10 @@ const putUsers = async (req, res, next) => {
     try {
         const { id } = req.params
         const { username, password, email } = req.body
+        const hashedPassword = await bcrypt.hashPassword(password)
         const user = await Users.findByPk(id)
         if (!user) throw ({ code: 400, message: 'user not found' })
-        await Users.update({ username, password, email }, { where: { id } })
+        await Users.update({ username, password: hashedPassword, email }, { where: { id } })
         return res.status(201).json({
             error: false,
             message: 'succes',
